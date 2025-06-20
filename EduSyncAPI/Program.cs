@@ -15,14 +15,15 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.WriteIndented = true;
 });
 
-// Add DbContext technique
+// Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Auth Service
+// Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBlobService, BlobService>();
 
-// Add CORS
+// Add CORS Policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
@@ -33,7 +34,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add JWT Authentication
+// JWT Authentication Configuration
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -53,7 +54,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Add Swagger
+// Swagger Configuration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -79,14 +80,14 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            Array.Empty<string>()
+            new string[] {}
         }
     });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -94,12 +95,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

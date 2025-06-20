@@ -1,6 +1,7 @@
 ﻿using EduSyncAPI.Data;
 using EduSyncAPI.DTOs;
 using EduSyncAPI.Models;
+using EduSyncAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,12 @@ namespace EduSyncAPI.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IBlobService _blobService;
 
-        public CoursesController(ApplicationDbContext context)
+        public CoursesController(ApplicationDbContext context, IBlobService blobService)
         {
             _context = context;
+            _blobService = blobService;
         }
 
         // GET: api/Courses
@@ -155,6 +158,36 @@ namespace EduSyncAPI.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // POST: api/Courses/AddCourse with File Upload
+        [HttpPost("AddCourse")]
+        [Authorize(Roles = "Instructor,Admin")]
+        public async Task<IActionResult> AddCourse([FromForm] CourseDto courseDto, IFormFile mediaFile)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            if (mediaFile == null || mediaFile.Length == 0)
+                return BadRequest("Media file is required.");
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null) return Unauthorized();
+
+            var mediaUrl = await _blobService.UploadFileAsync(mediaFile);
+
+            var course = new Course
+            {
+                CourseId = Guid.NewGuid(),
+                Title = courseDto.Title,
+                Description = courseDto.Description,
+                MediaUrl = mediaUrl,
+                InstructorId = Guid.Parse(userId)
+            };
+
+            _context.Courses.Add(course);
+            await _context.SaveChangesAsync();
+
+            return Ok(course);
         }
     }
 }
