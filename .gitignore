@@ -344,3 +344,4 @@ FodyWeavers.xsd
 
 # Custom ignores
 appsettings.Development.json
+EduSyncAPI/appsettings.Development.json 
