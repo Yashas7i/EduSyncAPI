@@ -1,6 +1,7 @@
 ﻿using EduSyncAPI.Data;
 using EduSyncAPI.Models;
 using EduSyncAPI.DTOs;
+using EduSyncAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,12 @@ namespace EduSyncAPI.Controllers
     public class ResultsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly EventHubService _eventHubService;
 
-        public ResultsController(ApplicationDbContext context)
+        public ResultsController(ApplicationDbContext context, EventHubService eventHubService)
         {
             _context = context;
+            _eventHubService = eventHubService;
         }
 
         // POST: api/Results
@@ -62,6 +65,9 @@ namespace EduSyncAPI.Controllers
                 AssessmentTitle = assessment.Title,
                 UserName = user?.Name
             };
+
+            // ✅ Send Event to Azure Event Hub (ResultReadDTO matches QuizResults table)
+            await _eventHubService.SendEventAsync(resultDTO);
 
             return CreatedAtAction(nameof(GetResult), new { id = result.ResultId }, resultDTO);
         }
